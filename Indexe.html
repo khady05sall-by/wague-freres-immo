@@ -142,16 +142,17 @@ header p{ margin:0; font-size:13.5px; color:#CFC5A8; max-width:520px; position:r
 .spec .k{ font-size:9.5px; text-transform:uppercase; color:var(--muted); letter-spacing:0.5px; }
 .spec .v{ font-family:'Playfair Display', serif; font-size:14px; font-weight:600; color:var(--ink); }
 
-.card-actions{ display:flex; gap:8px; margin-top:8px; }
-.contact-actions,.admin-actions{ display:flex; gap:8px; flex:1; }
-.admin-actions{ border-left:1px solid var(--line); padding-left:8px; }
+.card-actions{ display:flex; flex-direction:column; gap:8px; margin-top:8px; }
+.contact-actions,.admin-actions{ display:flex; gap:8px; width:100%; }
+.admin-actions{ border-left:0; border-top:1px solid var(--line); padding:8px 0 0; }
 .btn-sm{
-  flex:1; padding:8px 10px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; border:1px solid var(--line);
-  background:#fff; color:var(--ink);
+  flex:1; min-width:0; padding:8px 6px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; border:1px solid var(--line);
+  background:#fff; color:var(--ink); overflow-wrap:anywhere; text-align:center;
 }
 .btn-sm.edit{ background:var(--deep); color:#F3EAD3; border-color:var(--deep); }
 .btn-sm.del{ color:#9C2B22; }
 .btn-contact{ background:#F3EAD3; color:var(--deep); border-color:var(--goldlight); text-decoration:none; text-align:center; }
+@media (max-width:380px){ .contact-actions,.admin-actions{ flex-direction:column; } }
 
 .empty{ text-align:center; padding:60px 20px; color:var(--muted); font-size:14px; }
 
@@ -224,7 +225,7 @@ header p{ margin:0; font-size:13.5px; color:#CFC5A8; max-width:520px; position:r
     <button class="addbtn" onclick="openForm()">+ &nbsp;Ajouter un bien</button>
   </div>
   <button class="adminbtn" id="authButton" onclick="toggleAdmin()">Connexion administrateur</button>
-  <div class="admin-state" id="adminState">Visiteur : consultation uniquement</div>
+  
 </header>
 
 <div class="stats" id="stats"></div>
