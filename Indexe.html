@@ -63,6 +63,13 @@ header p{ margin:0; font-size:13.5px; color:#CFC5A8; max-width:520px; position:r
 .adminbtn{ margin-top:18px; margin-left:8px; background:transparent; color:#F3EAD3; border:1px solid var(--goldlight); padding:10px 16px; border-radius:24px; font-weight:700; font-size:13px; cursor:pointer; position:relative; z-index:1; }
 .adminbtn:hover{ background:rgba(216,184,118,0.14); }
 .admin-state{ color:var(--goldlight); font-size:11px; margin-top:10px; position:relative; z-index:1; }
+.admin-panel{ max-width:1000px; margin:14px auto 0; padding:0 20px; }
+.admin-panel-inner{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px; background:var(--deep); color:#F3EAD3; border-radius:10px; }
+.admin-panel-title{ font-size:12px; font-weight:700; }
+.admin-panel-note{ font-size:11px; color:#CFC5A8; margin-top:3px; }
+.admin-panel-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+.admin-tool{ border:1px solid var(--goldlight); background:transparent; color:#F3EAD3; border-radius:7px; padding:7px 10px; font-size:11px; font-weight:700; cursor:pointer; }
+.admin-tool:hover{ background:rgba(216,184,118,0.14); }
 
 .stats{
   display:grid; grid-template-columns:repeat(auto-fit, minmax(110px,1fr)); gap:10px;
@@ -136,6 +143,8 @@ header p{ margin:0; font-size:13.5px; color:#CFC5A8; max-width:520px; position:r
 .spec .v{ font-family:'Playfair Display', serif; font-size:14px; font-weight:600; color:var(--ink); }
 
 .card-actions{ display:flex; gap:8px; margin-top:8px; }
+.contact-actions,.admin-actions{ display:flex; gap:8px; flex:1; }
+.admin-actions{ border-left:1px solid var(--line); padding-left:8px; }
 .btn-sm{
   flex:1; padding:8px 10px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; border:1px solid var(--line);
   background:#fff; color:var(--ink);
@@ -220,6 +229,7 @@ header p{ margin:0; font-size:13.5px; color:#CFC5A8; max-width:520px; position:r
 
 <div class="stats" id="stats"></div>
 <div class="filters" id="filters"></div>
+<div class="admin-panel" id="adminPanel"></div>
 <div class="grid" id="grid"><div class="loading">Chargement…</div></div>
 
 <div class="overlay" id="overlay">
@@ -290,6 +300,7 @@ header p{ margin:0; font-size:13.5px; color:#CFC5A8; max-width:520px; position:r
 </div>
 
 <div class="toast" id="toast"></div>
+<input type="file" id="dataImport" accept="application/json" hidden>
 
 <script>
 const STORAGE_KEY = 'wague-properties-v1';
@@ -485,9 +496,11 @@ function renderGrid(){
                 <div class="spec"><div class="k">Prix</div><div class="v">${p.prix || 'Sur demande'}</div></div>
               </div>
               <div class="card-actions">
-                <a class="btn-sm btn-contact" href="mailto:waguepabi@gmail.com?subject=Demande%20d'information%20-%20${encodeURIComponent(p.id)}">Email</a>
-                <a class="btn-sm btn-contact" target="_blank" rel="noopener" href="https://wa.me/221773615128?text=${encodeURIComponent(`Bonjour, je suis intéressé par le bien ${p.id} à ${p.ville}, ${p.zone}.`)}">WhatsApp</a>
-                ${isAdmin ? `<button class="btn-sm edit" onclick="openForm('${p.id}')">Modifier</button><button class="btn-sm del" onclick="deleteProperty('${p.id}')">Supprimer</button>` : ''}
+                <div class="contact-actions">
+                  <a class="btn-sm btn-contact" href="mailto:waguepabi@gmail.com?subject=Demande%20d'information%20-%20${encodeURIComponent(p.id)}">Email</a>
+                  <a class="btn-sm btn-contact" target="_blank" rel="noopener" href="https://wa.me/221773615128?text=${encodeURIComponent(`Bonjour, je suis intéressé par le bien ${p.id} à ${p.ville}, ${p.zone}.`)}">WhatsApp</a>
+                </div>
+                ${isAdmin ? `<div class="admin-actions"><button class="btn-sm edit" onclick="openForm('${p.id}')">Modifier</button><button class="btn-sm del" onclick="deleteProperty('${p.id}')">Supprimer</button></div>` : ''}
               </div>
             </div>
           `;
@@ -499,11 +512,47 @@ function renderGrid(){
 
 function render(){
   document.getElementById('adminControls').style.display = isAdmin ? 'block' : 'none';
+  document.getElementById('adminPanel').innerHTML = isAdmin ? `
+    <div class="admin-panel-inner">
+      <div><div class="admin-panel-title">Espace administrateur</div><div class="admin-panel-note">Les données sont enregistrées dans ce navigateur.</div></div>
+      <div class="admin-panel-actions"><button class="admin-tool" onclick="exportData()">Exporter</button><button class="admin-tool" onclick="document.getElementById('dataImport').click()">Importer</button></div>
+    </div>` : '';
   document.getElementById('authButton').textContent = isAdmin ? 'Se déconnecter' : 'Connexion administrateur';
   document.getElementById('adminState').textContent = isAdmin ? 'Administrateur connecté' : 'Visiteur : consultation uniquement';
   renderStats();
   renderFilters();
   renderGrid();
+}
+
+function exportData(){
+  const blob = new Blob([JSON.stringify(properties, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'wague-freres-biens.json';
+  link.click();
+  URL.revokeObjectURL(url);
+  showToast('Sauvegarde exportée');
+}
+
+function importData(event){
+  const file = event.target.files && event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async function(){
+    try{
+      const imported = JSON.parse(reader.result);
+      if(!Array.isArray(imported)) throw new Error('Format invalide');
+      properties = imported;
+      await persist();
+      render();
+      showToast('Données importées');
+    }catch(e){
+      showToast('Fichier JSON invalide');
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
 }
 
 function toggleAdmin(){
@@ -629,6 +678,7 @@ async function deleteProperty(id){
 }
 
 document.getElementById('f_photo_upload').addEventListener('change', handlePhotoUpload);
+document.getElementById('dataImport').addEventListener('change', importData);
 loadProperties();
 </script>
 </body>
