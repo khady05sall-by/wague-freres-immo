@@ -144,15 +144,16 @@ header p{ margin:0; font-size:13.5px; color:#CFC5A8; max-width:520px; position:r
 
 .card-actions{ display:flex; flex-direction:column; gap:8px; margin-top:8px; }
 .contact-actions,.admin-actions{ display:flex; gap:8px; width:100%; }
-.admin-actions{ border-left:0; border-top:1px solid var(--line); padding:8px 0 0; }
+.admin-actions{ display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); border-left:0; border-top:1px solid var(--line); padding:8px 0 0; }
 .btn-sm{
   flex:1; min-width:0; padding:8px 6px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; border:1px solid var(--line);
   background:#fff; color:var(--ink); overflow-wrap:anywhere; text-align:center;
 }
 .btn-sm.edit{ background:var(--deep); color:#F3EAD3; border-color:var(--deep); }
 .btn-sm.del{ color:#9C2B22; }
+.admin-actions .btn-sm{ white-space:nowrap; font-size:11px; padding-left:3px; padding-right:3px; }
 .btn-contact{ background:#F3EAD3; color:var(--deep); border-color:var(--goldlight); text-decoration:none; text-align:center; }
-@media (max-width:380px){ .contact-actions,.admin-actions{ flex-direction:column; } }
+@media (max-width:380px){ .contact-actions{ flex-direction:column; } .admin-actions{ grid-template-columns:1fr; } }
 
 .empty{ text-align:center; padding:60px 20px; color:var(--muted); font-size:14px; }
 
