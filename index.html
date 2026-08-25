@@ -60,6 +60,9 @@ header p{ margin:0; font-size:13.5px; color:#CFC5A8; max-width:520px; position:r
   display:inline-flex; align-items:center; gap:8px;
 }
 .addbtn:hover{ background:var(--goldlight); }
+.adminbtn{ margin-top:18px; margin-left:8px; background:transparent; color:#F3EAD3; border:1px solid var(--goldlight); padding:10px 16px; border-radius:24px; font-weight:700; font-size:13px; cursor:pointer; position:relative; z-index:1; }
+.adminbtn:hover{ background:rgba(216,184,118,0.14); }
+.admin-state{ color:var(--goldlight); font-size:11px; margin-top:10px; position:relative; z-index:1; }
 
 .stats{
   display:grid; grid-template-columns:repeat(auto-fit, minmax(110px,1fr)); gap:10px;
@@ -139,6 +142,7 @@ header p{ margin:0; font-size:13.5px; color:#CFC5A8; max-width:520px; position:r
 }
 .btn-sm.edit{ background:var(--deep); color:#F3EAD3; border-color:var(--deep); }
 .btn-sm.del{ color:#9C2B22; }
+.btn-contact{ background:#F3EAD3; color:var(--deep); border-color:var(--goldlight); text-decoration:none; text-align:center; }
 
 .empty{ text-align:center; padding:60px 20px; color:var(--muted); font-size:14px; }
 
@@ -207,7 +211,11 @@ header p{ margin:0; font-size:13.5px; color:#CFC5A8; max-width:520px; position:r
   </div>
   <h1>Plateforme de suivi</h1>
   
-  <button class="addbtn" onclick="openForm()">+ &nbsp;Ajouter un bien</button>
+  <div id="adminControls">
+    <button class="addbtn" onclick="openForm()">+ &nbsp;Ajouter un bien</button>
+  </div>
+  <button class="adminbtn" id="authButton" onclick="toggleAdmin()">Connexion administrateur</button>
+  <div class="admin-state" id="adminState">Visiteur : consultation uniquement</div>
 </header>
 
 <div class="stats" id="stats"></div>
@@ -267,15 +275,32 @@ header p{ margin:0; font-size:13.5px; color:#CFC5A8; max-width:520px; position:r
   </div>
 </div>
 
+<div class="overlay" id="loginOverlay">
+  <div class="modal">
+    <h2>Connexion administrateur</h2>
+    <div class="field">
+      <label for="adminPassword">Mot de passe</label>
+      <input id="adminPassword" type="password" autocomplete="current-password" placeholder="Mot de passe administrateur">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeLogin()">Annuler</button>
+      <button class="btn-save" onclick="loginAdmin()">Se connecter</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 const STORAGE_KEY = 'wague-properties-v1';
+const ADMIN_SESSION_KEY = 'wague-admin-session-v1';
+const ADMIN_PASSWORD = 'WagueAdmin2026!';
 let properties = [];
 let editingId = null;
 let activeFilter = 'Tous';
 let activeTypeFilter = 'Tous';
 let currentPhoto = '';
+let isAdmin = sessionStorage.getItem(ADMIN_SESSION_KEY) === 'true';
 
 function safeReadStorage(){
   try {
@@ -312,8 +337,8 @@ const DEFAULTS = [
   { id: 'V-05', type: 'Villa', ville: 'Ziguinchor', zone: 'Castor', tagline: 'Le charme intemporel de Ziguinchor.', superficie: '', prix: '', statut: 'À définir', photos: true, photo: './PHOTOS%20IMMOBILIER/WG-001/photo2.avif', desc: '' },
   { id: 'V-06', type: 'Villa', ville: 'Mbour', zone: 'Saly', tagline: "Réveillez-vous face à l'océan, à Saly.", superficie: '', prix: '', statut: 'À définir', photos: true, photo: './PHOTOS%20IMMOBILIER/WG-001/photo3.jpg', desc: '' },
   { id: 'T-01', type: 'Terrain', ville: 'Mbour', zone: 'Saly', tagline: "Un terrain d'exception sur la Petite Côte.", superficie: '', prix: '', statut: 'Disponible', photo: './PHOTOS%20IMMOBILIER/WG-T001/photo1.webp', desc: '' },
-  { id: 'T-02', type: 'Terrain', ville: 'Ziguinchor', zone: 'Zone à préciser', tagline: 'La Casamance vous tend les bras.', superficie: '', prix: '', statut: 'Disponible', photo: './PHOTOS%20IMMOBILIER/WG-T002/photo2.webp', desc: '' },
-  { id: 'T-03', type: 'Terrain', ville: 'Bignona', zone: 'Zone à préciser', tagline: 'Un terrain, mille possibilités à Bignona.', superficie: '', prix: '', statut: 'Disponible', photo: './PHOTOS%20IMMOBILIER/WG-T003/photo2.webp', desc: '' },
+  { id: 'T-02', type: 'Terrain', ville: 'Ziguinchor', zone: 'Zone à préciser', tagline: 'La Casamance vous tend les bras.', superficie: '', prix: '', statut: 'Disponible', photo: './PHOTOS%20IMMOBILIER/WG-T002/photo2.jpg', desc: '' },
+  { id: 'T-03', type: 'Terrain', ville: 'Bignona', zone: 'Zone à préciser', tagline: 'Un terrain, mille possibilités à Bignona.', superficie: '', prix: '', statut: 'Disponible', photo: './PHOTOS%20IMMOBILIER/WG-T003/photo3.webp', desc: '' },
 ];
 
 async function loadProperties(){
@@ -323,8 +348,8 @@ async function loadProperties(){
     properties = properties.map(property => {
       const updated = { ...property };
       if (updated.id === 'T-01') updated.photo = './PHOTOS%20IMMOBILIER/WG-T001/photo1.webp';
-      if (updated.id === 'T-02') updated.photo = './PHOTOS%20IMMOBILIER/WG-T002/photo1.webp';
-      if (updated.id === 'T-03') updated.photo = './PHOTOS%20IMMOBILIER/WG-T003/photo1.webp';
+      if (updated.id === 'T-02') updated.photo = './PHOTOS%20IMMOBILIER/WG-T002/photo2.jpg';
+      if (updated.id === 'T-03') updated.photo = './PHOTOS%20IMMOBILIER/WG-T003/photo3.webp';
       if (updated.statut === 'À définir') updated.statut = 'Disponible';
       delete updated.photos;
       return updated;
@@ -460,8 +485,9 @@ function renderGrid(){
                 <div class="spec"><div class="k">Prix</div><div class="v">${p.prix || 'Sur demande'}</div></div>
               </div>
               <div class="card-actions">
-                <button class="btn-sm edit" onclick="openForm('${p.id}')">Modifier</button>
-                <button class="btn-sm del" onclick="deleteProperty('${p.id}')">Supprimer</button>
+                <a class="btn-sm btn-contact" href="mailto:waguepabi@gmail.com?subject=Demande%20d'information%20-%20${encodeURIComponent(p.id)}">Email</a>
+                <a class="btn-sm btn-contact" target="_blank" rel="noopener" href="https://wa.me/221773615128?text=${encodeURIComponent(`Bonjour, je suis intéressé par le bien ${p.id} à ${p.ville}, ${p.zone}.`)}">WhatsApp</a>
+                ${isAdmin ? `<button class="btn-sm edit" onclick="openForm('${p.id}')">Modifier</button><button class="btn-sm del" onclick="deleteProperty('${p.id}')">Supprimer</button>` : ''}
               </div>
             </div>
           `;
@@ -472,9 +498,42 @@ function renderGrid(){
 }
 
 function render(){
+  document.getElementById('adminControls').style.display = isAdmin ? 'block' : 'none';
+  document.getElementById('authButton').textContent = isAdmin ? 'Se déconnecter' : 'Connexion administrateur';
+  document.getElementById('adminState').textContent = isAdmin ? 'Administrateur connecté' : 'Visiteur : consultation uniquement';
   renderStats();
   renderFilters();
   renderGrid();
+}
+
+function toggleAdmin(){
+  if(isAdmin){
+    isAdmin = false;
+    sessionStorage.removeItem(ADMIN_SESSION_KEY);
+    render();
+    showToast('Déconnexion réussie');
+    return;
+  }
+  document.getElementById('adminPassword').value = '';
+  document.getElementById('loginOverlay').classList.add('open');
+  document.getElementById('adminPassword').focus();
+}
+
+function closeLogin(){
+  document.getElementById('loginOverlay').classList.remove('open');
+}
+
+function loginAdmin(){
+  const password = document.getElementById('adminPassword').value;
+  if(password !== ADMIN_PASSWORD){
+    showToast('Mot de passe incorrect');
+    return;
+  }
+  isAdmin = true;
+  sessionStorage.setItem(ADMIN_SESSION_KEY, 'true');
+  closeLogin();
+  render();
+  showToast('Connexion réussie');
 }
 
 function setPhotoPreview(dataUrl){
@@ -502,6 +561,7 @@ function setStatus(value){
 }
 
 function openForm(id){
+  if(!isAdmin) return;
   editingId = id || null;
   const p = id ? properties.find(x=>x.id===id) : null;
   document.getElementById('modalTitle').textContent = p ? `Modifier — ${p.ville}, ${p.zone}` : 'Ajouter un bien';
@@ -526,6 +586,7 @@ function closeForm(){
 }
 
 async function saveForm(){
+  if(!isAdmin) return;
   const ville = document.getElementById('f_ville').value.trim();
   const zone = document.getElementById('f_zone').value.trim();
   if(!ville || !zone){
@@ -559,6 +620,7 @@ async function saveForm(){
 }
 
 async function deleteProperty(id){
+  if(!isAdmin) return;
   if(!confirm("Supprimer ce bien ? Cette action est définitive.")) return;
   properties = properties.filter(p=>p.id!==id);
   await persist();
