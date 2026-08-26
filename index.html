@@ -70,6 +70,10 @@ header p{ margin:0; font-size:13.5px; color:#CFC5A8; max-width:520px; position:r
 .admin-panel-actions{ display:flex; gap:8px; flex-wrap:wrap; }
 .admin-tool{ border:1px solid var(--goldlight); background:transparent; color:#F3EAD3; border-radius:7px; padding:7px 10px; font-size:11px; font-weight:700; cursor:pointer; }
 .admin-tool:hover{ background:rgba(216,184,118,0.14); }
+.dashboard-stats{ display:grid; grid-template-columns:repeat(auto-fit, minmax(120px,1fr)); gap:10px; margin-top:12px; }
+.dashboard-title{ font-family:'Playfair Display', serif; font-size:18px; color:#F3EAD3; }
+.dashboard-status{ display:flex; flex-wrap:wrap; gap:7px; margin-top:10px; }
+.dashboard-status span{ font-size:11px; color:#F3EAD3; border:1px solid rgba(216,184,118,0.55); border-radius:999px; padding:5px 9px; }
 
 .stats{
   display:grid; grid-template-columns:repeat(auto-fit, minmax(110px,1fr)); gap:10px;
@@ -216,7 +220,7 @@ header p{ margin:0; font-size:13.5px; color:#CFC5A8; max-width:520px; position:r
   <div class="brand-row">
     <div class="seal">W&amp;F</div>
     <div>
-      <div class="brand-title">WAGUE <b>&amp;</b> FRÈRES_IMMO</div>
+      <div class="brand-title">WAGUE <b>&amp;</b> FRÈRES IMMO</div>
       <div class="brand-sub">Patrimoine immobilier</div>
     </div>
   </div>
@@ -226,12 +230,11 @@ header p{ margin:0; font-size:13.5px; color:#CFC5A8; max-width:520px; position:r
     <button class="addbtn" onclick="openForm()">+ &nbsp;Ajouter un bien</button>
   </div>
   <button class="adminbtn" id="authButton" onclick="toggleAdmin()">Connexion administrateur</button>
-  
+  <div class="admin-state" id="adminState">Visiteur : consultation uniquement</div>
   
   
 </header>
 
-<div class="stats" id="stats"></div>
 <div class="filters" id="filters"></div>
 <div class="admin-panel" id="adminPanel"></div>
 <div class="grid" id="grid"><div class="loading">Chargement…</div></div>
@@ -243,7 +246,7 @@ header p{ margin:0; font-size:13.5px; color:#CFC5A8; max-width:520px; position:r
       <label>Type de bien</label>
       <select id="f_type">
         <option>Villa</option>
-        <option>Immeuble</option>
+        <option>Villa/Immeuble</option>
         <option>Terrain</option>
       </select>
     </div>
@@ -411,14 +414,19 @@ function renderStats(){
   const villas = properties.filter(p=>p.type==='Villa').length;
   const immeubles = properties.filter(p=>p.type==='Villa/Immeuble').length;
   const terrains = properties.filter(p=>p.type==='Terrain').length;
-  const dispo = properties.filter(p=>p.statut==='Disponible').length;
-  document.getElementById('stats').innerHTML = `
+  const statuses = ['Disponible','Vendu','Suspendu','À rénover','Réservé','Loué'];
+  const stats = document.getElementById('dashboardStats');
+  const statusStats = document.getElementById('dashboardStatus');
+  if(!stats || !statusStats) return;
+  stats.innerHTML = `
     <div class="stat"><div class="num">${total}</div><div class="lbl">Biens au total</div></div>
     <div class="stat"><div class="num">${villas}</div><div class="lbl">Villas</div></div>
     <div class="stat"><div class="num">${immeubles}</div><div class="lbl">Immeubles</div></div>
     <div class="stat"><div class="num">${terrains}</div><div class="lbl">Terrains</div></div>
-    <div class="stat"><div class="num">${dispo}</div><div class="lbl">Disponibles</div></div>
   `;
+  statusStats.innerHTML = statuses
+    .map(status => `<span>${status} : ${properties.filter(p=>p.statut===status).length}</span>`)
+    .join('');
 }
 
 function renderFilters(){
@@ -518,7 +526,12 @@ function render(){
   document.getElementById('adminControls').style.display = isAdmin ? 'block' : 'none';
   document.getElementById('adminPanel').innerHTML = isAdmin ? `
     <div class="admin-panel-inner">
-      <div><div class="admin-panel-title">Espace administrateur</div><div class="admin-panel-note">Les données sont enregistrées dans ce navigateur.</div></div>
+      <div style="width:100%">
+        <div class="dashboard-title">Tableau de bord administrateur</div>
+        <div class="admin-panel-note">Les données sont enregistrées dans ce navigateur.</div>
+        <div class="dashboard-stats" id="dashboardStats"></div>
+        <div class="dashboard-status" id="dashboardStatus"></div>
+      </div>
       <div class="admin-panel-actions"><button class="admin-tool" onclick="exportData()">Exporter</button><button class="admin-tool" onclick="document.getElementById('dataImport').click()">Importer</button></div>
     </div>` : '';
   document.getElementById('authButton').textContent = isAdmin ? 'Se déconnecter' : 'Connexion administrateur';
@@ -530,14 +543,37 @@ function render(){
 }
 
 function exportData(){
-  const blob = new Blob([JSON.stringify(properties, null, 2)], {type:'application/json'});
+  const columns = [
+    ['ID', 'id'],
+    ['Type', 'type'],
+    ['Ville', 'ville'],
+    ['Zone', 'zone'],
+    ['Statut', 'statut'],
+    ['Superficie', 'superficie'],
+    ['Prix', 'prix'],
+    ['Description', 'desc'],
+    ['Chemin photo', 'photo']
+  ];
+  const escapeHtml = value => String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+  const tableHead = columns.map(([label]) => `<th>${escapeHtml(label)}</th>`).join('');
+  const tableRows = properties.map(property => `
+    <tr>${columns.map(([, key]) => `<td>${escapeHtml(property[key])}</td>`).join('')}</tr>
+  `).join('');
+  const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Biens Wague & Frères Immo</title>
+    <style>body{font-family:Arial,sans-serif;color:#211D17;padding:24px}.brand{display:flex;align-items:center;gap:12px;margin-bottom:20px}.seal{width:48px;height:48px;border:2px solid #B4863C;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#B4863C;font-family:Georgia,serif;font-style:italic;font-weight:bold}.brand h1{color:#0F332F;font-family:Georgia,serif;margin:0}.brand small{display:block;color:#B4863C;letter-spacing:2px;margin-top:3px}table{border-collapse:collapse;width:100%;font-size:14px}th,td{border:1px solid #D8CBAE;padding:9px;text-align:left;vertical-align:top}th{background:#0F332F;color:white}tr:nth-child(even){background:#F6EFDD}</style>
+    </head><body><div class="brand"><div class="seal">W&amp;F</div><div><h1>WAGUE &amp; FRÈRES IMMO</h1><small>Patrimoine immobilier</small></div></div><table><thead><tr>${tableHead}</tr></thead><tbody>${tableRows}</tbody></table></body></html>`;
+  const blob = new Blob([html], {type:'text/html;charset=utf-8'});
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = 'wague-freres-biens.json';
+  link.download = 'wague-freres-biens.html';
   link.click();
   URL.revokeObjectURL(url);
-  showToast('Sauvegarde exportée');
+  showToast('Tableau exporté');
 }
 
 function importData(event){
