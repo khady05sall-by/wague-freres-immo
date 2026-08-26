@@ -144,16 +144,16 @@ header p{ margin:0; font-size:13.5px; color:#CFC5A8; max-width:520px; position:r
 
 .card-actions{ display:flex; flex-direction:column; gap:8px; margin-top:8px; }
 .contact-actions,.admin-actions{ display:flex; gap:8px; width:100%; }
-.admin-actions{ display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); border-left:0; border-top:1px solid var(--line); padding:8px 0 0; }
+.admin-actions{ display:grid; grid-template-columns:1fr; border-left:0; border-top:1px solid var(--line); padding:8px 0 0; }
 .btn-sm{
   flex:1; min-width:0; padding:8px 6px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; border:1px solid var(--line);
   background:#fff; color:var(--ink); overflow-wrap:anywhere; text-align:center;
 }
 .btn-sm.edit{ background:var(--deep); color:#F3EAD3; border-color:var(--deep); }
 .btn-sm.del{ color:#9C2B22; }
-.admin-actions .btn-sm{ white-space:nowrap; font-size:11px; padding-left:3px; padding-right:3px; }
+.admin-actions .btn-sm{ width:100%; min-height:34px; white-space:nowrap; font-size:12px; padding-left:8px; padding-right:8px; }
 .btn-contact{ background:#F3EAD3; color:var(--deep); border-color:var(--goldlight); text-decoration:none; text-align:center; }
-@media (max-width:380px){ .contact-actions{ flex-direction:column; } .admin-actions{ grid-template-columns:1fr; } }
+@media (max-width:380px){ .contact-actions{ flex-direction:column; } }
 
 .empty{ text-align:center; padding:60px 20px; color:var(--muted); font-size:14px; }
 
@@ -502,7 +502,7 @@ function renderGrid(){
                   <a class="btn-sm btn-contact" href="mailto:waguepabi@gmail.com?subject=Demande%20d'information%20-%20${encodeURIComponent(p.id)}">Email</a>
                   <a class="btn-sm btn-contact" target="_blank" rel="noopener" href="https://wa.me/221773615128?text=${encodeURIComponent(`Bonjour, je suis intéressé par le bien ${p.id} à ${p.ville}, ${p.zone}.`)}">WhatsApp</a>
                 </div>
-                ${isAdmin ? `<div class="admin-actions"><button class="btn-sm edit" onclick="openForm('${p.id}')">Modifier</button><button class="btn-sm del" title="Supprimer ce bien" onclick="deleteProperty('${p.id}')">Suppr.</button></div>` : ''}
+                ${isAdmin ? `<div class="admin-actions"><button class="btn-sm edit" onclick="openForm('${p.id}')">Modifier</button><button class="btn-sm del" title="Supprimer ce bien" onclick="deleteProperty('${p.id}')">Supprimer</button></div>` : ''}
               </div>
             </div>
           `;
