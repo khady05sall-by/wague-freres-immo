@@ -498,10 +498,10 @@ function renderGrid(){
                 <div class="spec"><div class="k">Prix</div><div class="v">${p.prix || 'Sur demande'}</div></div>
               </div>
               <div class="card-actions">
-                <div class="contact-actions">
+                ${!isAdmin ? `<div class="contact-actions">
                   <a class="btn-sm btn-contact" href="mailto:waguepabi@gmail.com?subject=Demande%20d'information%20-%20${encodeURIComponent(p.id)}">Email</a>
                   <a class="btn-sm btn-contact" target="_blank" rel="noopener" href="https://wa.me/221773615128?text=${encodeURIComponent(`Bonjour, je suis intéressé par le bien ${p.id} à ${p.ville}, ${p.zone}.`)}">WhatsApp</a>
-                </div>
+                </div>` : ''}
                 ${isAdmin ? `<div class="admin-actions"><button class="btn-sm edit" onclick="openForm('${p.id}')">Modifier</button><button class="btn-sm del" title="Supprimer ce bien" onclick="deleteProperty('${p.id}')">Supprimer</button></div>` : ''}
               </div>
             </div>
